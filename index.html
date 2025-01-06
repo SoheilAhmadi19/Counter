@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proof of Count</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0;
+            font-family: 'Press Start 2P', cursive;
+            background-color: black;
+            color: white;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-size: 4rem;
+            transition: opacity 1s ease-out;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            text-align: center;
+            display: none;
+        }
+
+        .title {
+            font-size: 2rem;
+            margin-bottom: 80px;
+            color: white;
+        }
+
+        .counter-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 80px;
+        }
+
+        .button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            padding: 10px 20px;
+            border: 3px solid black;
+            border-radius: 5px;
+            background: black;
+            color: white;
+            box-shadow: 0 4px #888;
+            cursor: pointer;
+        }
+
+        .button:active {
+            box-shadow: 0 2px #555;
+            transform: translateY(2px);
+        }
+
+        .button:hover {
+            opacity: 0.9;
+        }
+
+        .counter-case {
+            display: flex;
+            padding: 20px;
+            background-color: #444;
+            border: 5px solid silver;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .counter-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .digit {
+            font-size: 2.1rem;
+            font-weight: bold;
+            color: white;
+            background-color: black;
+            border: 5px solid silver;
+            border-radius: 10px;
+            width: 70px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .digit .current,
+        .digit .next {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+
+        .digit .current {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .digit .next {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+
+        .digit.animate .current {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        .digit.animate .next {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Pop-up styles */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #222;
+            border: 3px solid silver;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            z-index: 2000;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .popup .button {
+            margin-top: 20px;
+        }
+
+        .popup .message {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .popup .number {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay" id="overlay">9</div>
+    <div class="container" id="mainContent">
+        <div class="title">Proof of Count</div>
+        <div class="counter-wrapper">
+            <button class="button" onclick="resetCounter()">Reset</button>
+            <div class="counter-case">
+                <div class="counter-container">
+                    <div class="digit" id="digit1">
+                        <span class="current">0</span>
+                        <span class="next">0</span>
+                    </div>
+                    <div class="digit" id="digit2">
+                        <span class="current">0</span>
+                        <span class="next">0</span>
+                    </div>
+                    <div class="digit" id="digit3">
+                        <span class="current">0</span>
+                        <span class="next">0</span>
+                    </div>
+                    <div class="digit" id="digit4">
+                        <span class="current">0</span>
+                        <span class="next">0</span>
+                    </div>
+                </div>
+            </div>
+            <button class="button" onclick="incrementCounter()">Press</button>
+        </div>
+        <!-- Mint button container -->
+        <div id="mintButtonContainer" style="display: none; margin-top: 20px;">
+            <button class="button" id="mintButton" onclick="showPopup()">Mint</button>
+        </div>
+    </div>
+
+    <!-- Pop-up box -->
+    <div id="popup" class="popup">
+        <div class="message">Good Hustle, Are You Ready to Mint?</div>
+        <div class="number" id="popupNumber"></div>
+        <button class="button" onclick="mintNow()">Mint</button>
+    </div>
+
+    <script>
+        let counterValue = 0;
+
+        function updateCounter() {
+            const digits = counterValue.toString().padStart(4, '0').split('');
+            digits.forEach((digit, index) => {
+                const digitElement = document.getElementById(`digit${index + 1}`);
+                const currentSpan = digitElement.querySelector('.current');
+                const nextSpan = digitElement.querySelector('.next');
+
+                if (currentSpan.textContent !== digit) {
+                    nextSpan.textContent = digit;
+                    digitElement.classList.add('animate');
+
+                    setTimeout(() => {
+                        currentSpan.textContent = digit;
+                        digitElement.classList.remove('animate');
+                    }, 300);
+                }
+            });
+        }
+
+        function incrementCounter() {
+            counterValue++;
+            if (counterValue > 9999) counterValue = 0;
+            updateCounter();
+            showMintButton(); // Show the mint button on pressing
+        }
+
+        function resetCounter() {
+            counterValue = 0;
+            updateCounter();
+        }
+
+        function startCountdown() {
+            let count = 9;
+            const overlay = document.getElementById('overlay');
+            const mainContent = document.getElementById('mainContent');
+
+            const countdownInterval = setInterval(() => {
+                overlay.textContent = count;
+                if (count === 0) {
+                    clearInterval(countdownInterval);
+                    overlay.classList.add('hidden');
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        mainContent.style.display = 'block';
+                    }, 1000);
+                }
+                count--;
+            }, 670); // 0.67 seconds per count for 50% faster countdown
+        }
+
+        function showMintButton() {
+            const mintContainer = document.getElementById('mintButtonContainer');
+            mintContainer.style.display = 'block';
+        }
+
+        function showPopup() {
+            const popup = document.getElementById('popup');
+            const popupNumber = document.getElementById('popupNumber');
+            popupNumber.textContent = `Your number is: ${counterValue}`;
+            popup.style.display = 'block';
+        }
+
+        function mintNow() {
+            alert(`Minting initiated with number ${counterValue}! Add your minting logic here.`);
+            const popup = document.getElementById('popup');
+            popup.style.display = 'none';
+        }
+
+        // Initialize counter and start countdown
+        updateCounter();
+        startCountdown();
+    </script>
+</body>
+</html>
